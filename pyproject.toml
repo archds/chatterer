@@ -1,0 +1,19 @@
+[project]
+name = "chatterer"
+version = "0.1.0"
+description = "This is a simple Telegram bot that uses OpenaiSDK to provide helpful answers to user's messages."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=1.63.2",
+    "pydantic>=2.10.6",
+    "pydantic-settings>=2.7.1",
+    "python-telegram-bot[http2,rate-limiter,webhooks]>=21.10",
+]
+
+[dependency-groups]
+dev = [
+    "devtools[pygments]>=0.12.2",
+    "pre-commit>=4.1.0",
+    "ruff>=0.9.7",
+]

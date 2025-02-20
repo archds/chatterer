@@ -1,0 +1,14 @@
+services:
+  chatterer:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - BOT__KEY_PATH=/ssl/private.key
+      - BOT__CERT_PATH=/ssl/cert.pem
+      - BOT__PERSISTENCE_PATH=/data/db.pickle
+    volumes:
+      - ./ssl:/ssl
+      - ./data:/data
+    ports:
+      - "8443:8443"
