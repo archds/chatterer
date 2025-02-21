@@ -15,6 +15,10 @@ logging.basicConfig(
 )
 
 
+def prepare_content(content: str) -> str:
+    return content.removeprefix(App.settings.bot.group_chat_react).strip()
+
+
 def prepare_response(response: ChatCompletion) -> str | None:
     try:
         first_choice = response.choices[0]
@@ -44,7 +48,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         App.initialize_model_context(),
     )
 
-    model_message = {"role": "user", "content": update.message.text}
+    model_message = {"role": "user", "content": prepare_content(update.message.text)}
     user_model_context.append(model_message)
 
     await context.bot.send_chat_action(
@@ -83,7 +87,11 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 HANDLERS = [
-    MessageHandler(filters.Regex(r"^бон .+") & filters.ChatType.GROUPS, echo),
+    MessageHandler(
+        filters.Regex(rf"^{App.settings.bot.group_chat_react} .+")
+        & filters.ChatType.GROUPS,
+        echo,
+    ),
     MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, echo),
 ]
 

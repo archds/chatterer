@@ -27,6 +27,7 @@ Must be set in `.env` file.
 | `BOT__MODE` | Mode to run bot in. Can be `webhook` or `polling` | Yes |
 | `BOT__LISTEN` | Listen address | No. Default - `0.0.0.0` |
 | `BOT__PORT` | Port to listen on | No. Default - `8443` |
+| `BOT__GROUP_CHAT_REACT` | Reaction to use for group chats | No. |
 | `LOGGING_LEVEL` | Logging level | No. Default - `INFO` |
 
 ## Development

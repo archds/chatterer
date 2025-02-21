@@ -25,6 +25,7 @@ class BotSettings(BaseModel):
     domain: str
     persistence_path: Path
     mode: Literal["webhook", "polling"]
+    group_chat_react: str
 
     def get_webhook_url(self):
         return f"https://{self.domain}:{self.port}"
