@@ -2,10 +2,14 @@ import html
 import logging
 from openai.types.chat.chat_completion import ChatCompletion
 from telegram import Update
+from telegram.constants import ChatType
 from telegram.ext import ContextTypes, MessageHandler, filters, CommandHandler
 
 from app import App
 from telegram.helpers import escape_markdown
+from openai.types.chat.chat_completion_system_message_param import (
+    ChatCompletionSystemMessageParam,
+)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -35,6 +39,23 @@ def prepare_response(response: ChatCompletion) -> str | None:
     return text
 
 
+def prepare_prompt(update: Update) -> str:
+    prompt = App.settings.default_model_prompt
+
+    if username := update.effective_user and update.effective_user.username:
+        prompt += f"\nYou are messaging with user nicknamed as: {username}"
+
+    if name := update.effective_user and update.effective_user.first_name:
+        prompt += f"\nYou are messaging with user named as: {name}"
+
+    if update.effective_chat and update.effective_chat.type == ChatType.GROUP:
+        prompt += (
+            f"\nYou are member of group chat with name: {update.effective_chat.title}"
+        )
+
+    return prompt
+
+
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert context.user_data is not None
     assert update.message is not None
@@ -55,9 +76,14 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         action="typing",
     )
 
+    system_context = ChatCompletionSystemMessageParam(
+        role="system",
+        content=prepare_prompt(update),
+    )
+
     response = await App.openai_client.chat.completions.create(
         model=App.settings.openai.model,
-        messages=[*App.settings.default_model_context, *user_model_context],
+        messages=[system_context, *user_model_context],
     )
 
     response = prepare_response(response)
@@ -75,10 +101,10 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def clear_user_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_message
-    
+
     if context.user_data is not None:
         context.user_data.clear()
-        
+
     await update.effective_message.reply_text("Контекст диалога очищен.")
 
 
