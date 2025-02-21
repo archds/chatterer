@@ -23,7 +23,12 @@ class App:
         .defaults(defaults=Defaults(parse_mode="Markdown"))
         .http_version("2.0")
         .rate_limiter(AIORateLimiter())
-        .persistence(PicklePersistence(filepath=settings.bot.persistence_path))
+        .persistence(
+            PicklePersistence(
+                filepath=settings.bot.persistence_path / "chatterer",
+                single_file=False,
+            )
+        )
     )
     openai_client = openai.AsyncOpenAI(
         base_url=settings.openai.base_url,
