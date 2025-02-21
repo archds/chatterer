@@ -19,7 +19,7 @@ logging.basicConfig(
 
 def prepare_content(content: str) -> str:
     txt = content.removeprefix(App.settings.bot.group_chat_react).strip()
-    return escape_markdown(content)
+    return escape_markdown(txt)
 
 
 def prepare_response(response: ChatCompletion) -> str | None:
