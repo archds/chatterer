@@ -66,12 +66,12 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_user is not None
     assert update.effective_chat is not None
 
-    user_model_context = context.user_data.get(
+    assistant_context = context.user_data.get(
         "model_context",
         App.initialize_model_context(),
     )
     
-    model_message = ChatCompletionUserMessageParam(
+    user_context = ChatCompletionUserMessageParam(
         role="user",
         content=prepare_content(update.message.text),
         name=update.effective_user.first_name,
@@ -89,7 +89,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     response = await App.openai_client.chat.completions.create(
         model=App.settings.openai.model,
-        messages=[system_context, *user_model_context, model_message],
+        messages=[system_context, *assistant_context, user_context],
     )
 
     response = prepare_response(response)
@@ -98,11 +98,11 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Ошибка при обработке запроса.")
         return
 
-    user_model_context.append({"role": "assistant", "content": response})
+    assistant_context.append({"role": "assistant", "content": response})
 
     await update.message.reply_text(response)
 
-    context.user_data["model_context"] = user_model_context
+    context.user_data["model_context"] = assistant_context
 
 
 async def clear_user_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
