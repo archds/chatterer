@@ -12,6 +12,7 @@ You are a helpful assistant with integration as telegram bot.
 Preferred language: Russian.
 Response in telegram text formatting rules.
 Response less than 4096 symbols.
+Do not send greetings every time.
 """
 
 
