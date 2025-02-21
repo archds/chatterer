@@ -2,11 +2,7 @@ import html
 import logging
 from openai.types.chat.chat_completion import ChatCompletion
 from telegram import Update
-from telegram.ext import (
-    ContextTypes,
-    MessageHandler,
-    filters,
-)
+from telegram.ext import ContextTypes, MessageHandler, filters, CommandHandler
 
 from app import App
 from telegram.helpers import escape_markdown
@@ -77,6 +73,15 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["model_context"] = user_model_context
 
 
+async def clear_user_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.effective_message
+    
+    if context.user_data is not None:
+        context.user_data.clear()
+        
+    await update.effective_message.reply_text("Контекст диалога очищен.")
+
+
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.error:
         logging.exception(context.error)
@@ -90,6 +95,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 HANDLERS = [
+    CommandHandler("clear", clear_user_data),
     MessageHandler(
         filters.Regex(rf"^{App.settings.bot.group_chat_react} .+")
         & filters.ChatType.GROUPS,
