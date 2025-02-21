@@ -123,11 +123,14 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 HANDLERS = [
     CommandHandler("clear", clear_user_data),
     MessageHandler(
-        filters.Regex(rf"^{App.settings.bot.group_chat_react} .+")
-        & filters.ChatType.GROUPS,
+        (
+            filters.Regex(rf"^{App.settings.bot.group_chat_react} .+")
+            & filters.ChatType.GROUPS
+        )
+        | (filters.TEXT & filters.ChatType.PRIVATE)
+        | (filters.REPLY & filters.TEXT),
         echo,
     ),
-    MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, echo),
 ]
 
 if __name__ == "__main__":
