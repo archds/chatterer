@@ -10,6 +10,9 @@ from telegram.helpers import escape_markdown
 from openai.types.chat.chat_completion_system_message_param import (
     ChatCompletionSystemMessageParam,
 )
+from openai.types.chat.chat_completion_user_message_param import (
+    ChatCompletionUserMessageParam
+)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -67,9 +70,12 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "model_context",
         App.initialize_model_context(),
     )
-
-    model_message = {"role": "user", "content": prepare_content(update.message.text)}
-    user_model_context.append(model_message)
+    
+    model_message = ChatCompletionUserMessageParam(
+        role="user",
+        content=prepare_content(update.message.text),
+        name=update.effective_user.first_name,
+    )
 
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id,
@@ -83,7 +89,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     response = await App.openai_client.chat.completions.create(
         model=App.settings.openai.model,
-        messages=[system_context, *user_model_context],
+        messages=[system_context, *user_model_context, model_message],
     )
 
     response = prepare_response(response)
