@@ -1,3 +1,4 @@
+import html
 import logging
 from openai.types.chat.chat_completion import ChatCompletion
 from telegram import Update
@@ -18,7 +19,7 @@ logging.basicConfig(
 
 def prepare_content(content: str) -> str:
     txt = content.removeprefix(App.settings.bot.group_chat_react).strip()
-    return escape_markdown(txt)
+    return escape_markdown(content)
 
 
 def prepare_response(response: ChatCompletion) -> str | None:

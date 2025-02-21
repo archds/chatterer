@@ -7,8 +7,11 @@ from openai.types.chat.chat_completion_system_message_param import (
     ChatCompletionSystemMessageParam,
 )
 
-FMT_RULES = """
-Formatting: Markdown
+DEFAULT_CONTEXT = """
+You are a helpful assistant.
+Preferred language: Russian.
+Response in telegram text formatting rules.
+Response less than 4096 symbols.
 """
 
 
@@ -48,20 +51,5 @@ class Settings(BaseSettings):
     bot: BotSettings
 
     default_model_context: list[ChatCompletionSystemMessageParam] = [
-        ChatCompletionSystemMessageParam(
-            role="system",
-            content="You are a helpful assistant.",
-        ),
-        ChatCompletionSystemMessageParam(
-            role="system",
-            content=FMT_RULES,
-        ),
-        ChatCompletionSystemMessageParam(
-            role="system",
-            content="Preferred language: Russian.",
-        ),
-        ChatCompletionSystemMessageParam(
-            role="system",
-            content="Response less than 4096 symbols.",
-        ),
+        ChatCompletionSystemMessageParam(role="system", content=DEFAULT_CONTEXT)
     ]
