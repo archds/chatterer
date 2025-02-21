@@ -8,10 +8,7 @@ from openai.types.chat.chat_completion_system_message_param import (
 )
 
 FMT_RULES = """
-Use the following formatting rules:
-Headings: **bold** 
-Accents: __italic__
-Lists: -
+Formatting: Markdown
 """
 
 

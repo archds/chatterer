@@ -8,6 +8,7 @@ from telegram.ext import (
 )
 
 from app import App
+from telegram.helpers import escape_markdown
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -16,7 +17,8 @@ logging.basicConfig(
 
 
 def prepare_content(content: str) -> str:
-    return content.removeprefix(App.settings.bot.group_chat_react).strip()
+    txt = content.removeprefix(App.settings.bot.group_chat_react).strip()
+    return escape_markdown(txt)
 
 
 def prepare_response(response: ChatCompletion) -> str | None:
