@@ -6,7 +6,7 @@ services:
     environment:
       - BOT__KEY_PATH=/ssl/private.key
       - BOT__CERT_PATH=/ssl/cert.pem
-      - BOT__PERSISTENCE_PATH=/data/db.pickle
+      - BOT__PERSISTENCE_PATH=/data
     volumes:
       - ./ssl:/ssl
       - ./data:/data
