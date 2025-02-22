@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import html
 import logging
 from openai.types.chat.chat_completion import ChatCompletion
@@ -11,8 +12,13 @@ from openai.types.chat.chat_completion_system_message_param import (
     ChatCompletionSystemMessageParam,
 )
 from openai.types.chat.chat_completion_user_message_param import (
-    ChatCompletionUserMessageParam
+    ChatCompletionUserMessageParam,
 )
+from openai.types.chat.chat_completion_assistant_message_param import (
+    ChatCompletionAssistantMessageParam,
+)
+
+from context import LLMContext
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -22,7 +28,7 @@ logging.basicConfig(
 
 def prepare_content(content: str) -> str:
     txt = content.removeprefix(App.settings.bot.group_chat_react).strip()
-    return escape_markdown(txt)
+    return txt
 
 
 def prepare_response(response: ChatCompletion) -> str | None:
@@ -66,30 +72,23 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_user is not None
     assert update.effective_chat is not None
 
-    assistant_context = context.user_data.get(
-        "model_context",
-        App.initialize_model_context(),
-    )
-    
+    llm_context = LLMContext.from_tg_context(context) or LLMContext(update)
+
     user_context = ChatCompletionUserMessageParam(
         role="user",
         content=prepare_content(update.message.text),
         name=update.effective_user.first_name,
     )
+    llm_context.add_context(user_context)
 
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id,
         action="typing",
     )
 
-    system_context = ChatCompletionSystemMessageParam(
-        role="system",
-        content=prepare_prompt(update),
-    )
-
     response = await App.openai_client.chat.completions.create(
         model=App.settings.openai.model,
-        messages=[system_context, *assistant_context, user_context],
+        messages=llm_context.content,
     )
 
     response = prepare_response(response)
@@ -98,11 +97,17 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Ошибка при обработке запроса.")
         return
 
-    assistant_context.append({"role": "assistant", "content": response})
+    assistant_context = ChatCompletionAssistantMessageParam(
+        role="assistant", content=response
+    )
+    llm_context.add_context(assistant_context)
 
-    await update.message.reply_text(response)
+    try:
+        await update.message.reply_text(response)
+    except Exception:
+        await update.message.reply_text(escape_markdown(response))
 
-    context.user_data["model_context"] = assistant_context
+    context.user_data["llm_context"] = llm_context
 
 
 async def clear_user_data(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -24,7 +24,7 @@ class BotSettings(BaseModel):
     key_path: Path | None = None
     cert_path: Path | None = None
     domain: str
-    persistence_path: Path
+    persistence_path: Path | None = None
     mode: Literal["webhook", "polling"]
     group_chat_react: str
 
@@ -36,7 +36,8 @@ class OpenaiSDKSettings(BaseModel):
     base_url: str
     token: str
     model: str
-    context_length: int = Field(default=10)
+    context_length: int = Field(default=5)
+    context_timeout: int = Field(default=600)
 
 
 class Settings(BaseSettings):

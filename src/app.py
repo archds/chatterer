@@ -23,12 +23,6 @@ class App:
         .defaults(defaults=Defaults(parse_mode="Markdown"))
         .http_version("2.0")
         .rate_limiter(AIORateLimiter())
-        .persistence(
-            PicklePersistence(
-                filepath=settings.bot.persistence_path / "chatterer",
-                single_file=False,
-            )
-        )
     )
     openai_client = openai.AsyncOpenAI(
         base_url=settings.openai.base_url,
@@ -39,7 +33,7 @@ class App:
     bot_application: Application
 
     @classmethod
-    def initialize_model_context(cls) -> deque:
+    def initialize_llm_context(cls) -> deque:
         return deque([], maxlen=cls.settings.openai.context_length)
 
     @classmethod
@@ -47,8 +41,15 @@ class App:
         if cls.settings.bot.token:
             cls.bot_application_builder.token(cls.settings.bot.token)
 
-        cls.bot_application = cls.bot_application_builder.build()
+        if cls.settings.bot.persistence_path:
+            cls.bot_application_builder.persistence(
+                PicklePersistence(
+                    filepath=cls.settings.bot.persistence_path / "chatterer",
+                    single_file=False,
+                )
+            )
 
+        cls.bot_application = cls.bot_application_builder.build()
         cls.bot_application.add_handlers(handlers)
         cls.bot_application.add_error_handler(error_handler)
 
