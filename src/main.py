@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import html
 import logging
+import re
 from openai.types.chat.chat_completion import ChatCompletion
 from telegram import ChatMember, MessageEntity, Update
 from telegram.constants import ChatType
@@ -25,9 +26,18 @@ logging.basicConfig(
     level=App.settings.logging_level,
 )
 
+PREFIX_REGEX = re.compile(
+    App.settings.bot.group_chat_react_regex_prefix + ".+", re.IGNORECASE
+)
+
 
 def prepare_content(content: str) -> str:
-    txt = content.removeprefix(App.settings.bot.group_chat_react).strip()
+    txt = (
+        re.sub(PREFIX_REGEX, "", content)
+        .removeprefix(",")
+        .removeprefix(".")
+        .strip()
+    )
     return txt
 
 
@@ -142,7 +152,7 @@ HANDLERS = [
     CommandHandler("clear", clear_user_data),
     MessageHandler(
         (
-            filters.Regex(rf"^{App.settings.bot.group_chat_react} .+")
+            filters.Regex(PREFIX_REGEX)
             & filters.ChatType.GROUPS
         )
         | (filters.TEXT & filters.ChatType.PRIVATE)

@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 from typing import Literal
 from openai import BaseModel
 from pydantic import Field
@@ -26,7 +27,7 @@ class BotSettings(BaseModel):
     domain: str
     persistence_path: Path | None = None
     mode: Literal["webhook", "polling"]
-    group_chat_react: str
+    group_chat_react_regex_prefix: str
 
     def get_webhook_url(self):
         return f"https://{self.domain}:{self.port}"
