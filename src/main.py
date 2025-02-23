@@ -33,7 +33,7 @@ PREFIX_REGEX = re.compile(
 
 def prepare_content(content: str) -> str:
     txt = (
-        re.sub(PREFIX_REGEX, "", content)
+        re.sub(App.settings.bot.group_chat_react_regex_prefix, "", content)
         .removeprefix(",")
         .removeprefix(".")
         .strip()
@@ -151,10 +151,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 HANDLERS = [
     CommandHandler("clear", clear_user_data),
     MessageHandler(
-        (
-            filters.Regex(PREFIX_REGEX)
-            & filters.ChatType.GROUPS
-        )
+        (filters.Regex(PREFIX_REGEX) & filters.ChatType.GROUPS)
         | (filters.TEXT & filters.ChatType.PRIVATE)
         | (filters.REPLY & filters.TEXT),
         echo,
