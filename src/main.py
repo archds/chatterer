@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import html
 import logging
 from openai.types.chat.chat_completion import ChatCompletion
-from telegram import Update
+from telegram import ChatMember, MessageEntity, Update
 from telegram.constants import ChatType
 from telegram.ext import ContextTypes, MessageHandler, filters, CommandHandler
 
@@ -71,6 +71,13 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message.text is not None
     assert update.effective_user is not None
     assert update.effective_chat is not None
+
+    if (
+        update.message.reply_to_message
+        and update.message.reply_to_message.from_user
+        and update.message.reply_to_message.from_user.id != context.bot.id
+    ):
+        return
 
     llm_context = LLMContext.from_tg_context(context) or LLMContext(update)
 
