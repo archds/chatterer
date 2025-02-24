@@ -23,11 +23,12 @@ Must be set in `.env` file.
 | `BOT__KEY_PATH` | Path to private key file | For webhook mode |
 | `BOT__CERT_PATH` | Path to certificate file | For webhook mode |
 | `BOT__DOMAIN` | Domain to use for webhook | For webhook mode |
-| `BOT__PERSISTENCE_PATH` | Path to persistence file | No |
+| `BOT__PERSISTENCE_PATH` | Path to persistence files | Yes |
 | `BOT__MODE` | Mode to run bot in. Can be `webhook` or `polling` | Yes |
 | `BOT__LISTEN` | Listen address | No. Default - `0.0.0.0` |
 | `BOT__PORT` | Port to listen on | No. Default - `8443` |
 | `BOT__GROUP_CHAT_REACT` | Reaction to use for group chats | Yes |
+| `BOT__PASSWORD` | Bot password passed to `/start <pass>` | Yes |
 | `LOGGING_LEVEL` | Logging level | No. Default - `INFO` |
 
 ## Development

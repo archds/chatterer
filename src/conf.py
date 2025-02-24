@@ -1,12 +1,8 @@
 from pathlib import Path
-import re
 from typing import Literal
 from openai import BaseModel
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from openai.types.chat.chat_completion_system_message_param import (
-    ChatCompletionSystemMessageParam,
-)
 
 DEFAULT_CONTEXT = """
 You are a helpful assistant with integration as telegram bot.
@@ -25,9 +21,10 @@ class BotSettings(BaseModel):
     key_path: Path | None = None
     cert_path: Path | None = None
     domain: str
-    persistence_path: Path | None = None
+    persistence_path: Path
     mode: Literal["webhook", "polling"]
     group_chat_react_regex_prefix: str
+    password: str
 
     def get_webhook_url(self):
         return f"https://{self.domain}:{self.port}"

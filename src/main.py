@@ -1,17 +1,12 @@
-from datetime import datetime, timedelta
-import html
 import logging
 import re
 from openai.types.chat.chat_completion import ChatCompletion
-from telegram import ChatMember, MessageEntity, Update
+from telegram import Update
 from telegram.constants import ChatType
 from telegram.ext import ContextTypes, MessageHandler, filters, CommandHandler
 
 from app import App
 from telegram.helpers import escape_markdown
-from openai.types.chat.chat_completion_system_message_param import (
-    ChatCompletionSystemMessageParam,
-)
 from openai.types.chat.chat_completion_user_message_param import (
     ChatCompletionUserMessageParam,
 )
@@ -19,6 +14,7 @@ from openai.types.chat.chat_completion_assistant_message_param import (
     ChatCompletionAssistantMessageParam,
 )
 
+from auth import auth_required
 from context import LLMContext
 
 logging.basicConfig(
@@ -75,6 +71,19 @@ def prepare_prompt(update: Update) -> str:
     return prompt
 
 
+async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_chat:
+        return
+
+    chat_id = update.effective_chat.id
+
+    async with App.auth_database.connect() as db:
+        await db.add_chat(chat_id)
+
+    await update.effective_chat.send_message("Authorized😎")
+
+
+@auth_required(App.auth_database)
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert context.user_data is not None
     assert update.message is not None
@@ -127,6 +136,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["llm_context"] = llm_context
 
 
+@auth_required(App.auth_database)
 async def clear_user_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_message
 
@@ -149,6 +159,11 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 HANDLERS = [
+    CommandHandler(
+        "start",
+        register,
+        filters.Regex(re.compile(f"^/start {App.settings.bot.password}")),
+    ),
     CommandHandler("clear", clear_user_data),
     MessageHandler(
         (filters.Regex(PREFIX_REGEX) & filters.ChatType.GROUPS)

@@ -5,6 +5,7 @@ description = "This is a simple Telegram bot that uses OpenaiSDK to provide help
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.21.0",
     "openai>=1.63.2",
     "pydantic>=2.10.6",
     "pydantic-settings>=2.7.1",

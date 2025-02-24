@@ -7,11 +7,11 @@ from telegram.ext import (
     ApplicationBuilder,
     Defaults,
     AIORateLimiter,
-    PicklePersistence,
     BaseHandler,
 )
 
 from conf import Settings
+from auth import AuthorizedChatsDatabase
 
 
 class App:
@@ -29,6 +29,9 @@ class App:
         api_key=settings.openai.token,
         http_client=http_client,
     )
+    auth_database = AuthorizedChatsDatabase(
+        settings.bot.persistence_path / "auth.sqlite"
+    )
 
     bot_application: Application
 
@@ -40,14 +43,6 @@ class App:
     def entrypoint(cls, handlers: Sequence[BaseHandler], *, error_handler: Callable):
         if cls.settings.bot.token:
             cls.bot_application_builder.token(cls.settings.bot.token)
-
-        if cls.settings.bot.persistence_path:
-            cls.bot_application_builder.persistence(
-                PicklePersistence(
-                    filepath=cls.settings.bot.persistence_path / "chatterer",
-                    single_file=False,
-                )
-            )
 
         cls.bot_application = cls.bot_application_builder.build()
         cls.bot_application.add_handlers(handlers)
