@@ -52,15 +52,15 @@ class LLMContext:
 
     @classmethod
     def from_tg_context(cls, context: ContextTypes.DEFAULT_TYPE) -> Self | None:
-        if not context.user_data:
+        if not context.chat_data:
             return
 
-        llm_context = context.user_data.get("llm_context")
+        llm_context = context.chat_data.get("llm_context")
 
         if not llm_context:
             return
 
-        llm_context_updated_at = context.user_data.get("llm_context_updated_at")
+        llm_context_updated_at = context.chat_data.get("llm_context_updated_at")
 
         if llm_context_updated_at and (
             datetime.now() - llm_context_updated_at
