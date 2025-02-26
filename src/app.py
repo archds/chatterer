@@ -68,6 +68,7 @@ class App:
                 key=cls.settings.bot.key_path,
                 cert=cls.settings.bot.cert_path,
                 webhook_url=cls.settings.bot.get_webhook_url(),
+                allowed_updates=("message",),
             )
 
         if cls.settings.bot.mode == "polling":

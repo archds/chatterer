@@ -1,3 +1,5 @@
+import base64
+import io
 import logging
 import re
 from openai.types.chat.chat_completion import ChatCompletion
@@ -27,7 +29,7 @@ PREFIX_REGEX = re.compile(
 )
 
 
-def prepare_content(content: str) -> str:
+def prepare_text(content: str) -> str:
     txt = (
         re.sub(App.settings.bot.group_chat_react_regex_prefix, "", content)
         .removeprefix(",")
@@ -87,7 +89,6 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert context.user_data is not None
     assert update.message is not None
-    assert update.message.text is not None
     assert update.effective_user is not None
     assert update.effective_chat is not None
 
@@ -100,9 +101,32 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     llm_context = LLMContext.from_tg_context(context) or LLMContext(update)
 
+    content = []
+
+    if update.message.text:
+        content.append({"type": "text", "text": prepare_text(update.message.text)})
+
+    if update.message.photo:
+        buff = io.BytesIO()
+        photo = await update.message.photo[-1].get_file()
+        await photo.download_to_memory(buff)
+        base64_photo = base64.b64encode(buff.getvalue()).decode()
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": "data:image/jpeg;base64," + base64_photo,
+                    "detail": "auto",
+                },
+            }
+        )
+
+    if not content:
+        return
+
     user_context = ChatCompletionUserMessageParam(
         role="user",
-        content=prepare_content(update.message.text),
+        content=content,
         name=update.effective_user.first_name,
     )
     llm_context.add_context(user_context)
@@ -116,6 +140,12 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         model=App.settings.openai.model,
         messages=llm_context.content,
     )
+
+    if err := getattr(response, "error", None):
+        if err["code"] == 429:
+            await update.message.reply_text(
+                "Лимит запросов в минуту исчерпан, попробуйте позднее."
+            )
 
     response = prepare_response(response)
 
@@ -167,7 +197,7 @@ HANDLERS = [
     CommandHandler("clear", clear_user_data),
     MessageHandler(
         (filters.Regex(PREFIX_REGEX) & filters.ChatType.GROUPS)
-        | (filters.TEXT & filters.ChatType.PRIVATE)
+        | ((filters.TEXT | filters.PHOTO) & filters.ChatType.PRIVATE)
         | (filters.REPLY & filters.TEXT),
         echo,
     ),
