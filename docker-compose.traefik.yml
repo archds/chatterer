@@ -1,6 +1,8 @@
 services:
   chatterer:
     build: .
+    networks:
+      - traefik
     env_file:
       - .env
     environment:
