@@ -52,12 +52,6 @@ class App:
             if not cls.settings.bot.secret_token:
                 raise ValueError("Secret token is required for webhook mode")
 
-            if not cls.settings.bot.key_path:
-                raise ValueError("Key path is required for webhook mode")
-
-            if not cls.settings.bot.cert_path:
-                raise ValueError("Cert path is required for webhook mode")
-
             if not cls.settings.bot.domain:
                 raise ValueError("Domain is required for webhook mode")
 
