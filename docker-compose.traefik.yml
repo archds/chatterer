@@ -17,3 +17,7 @@ services:
       - "traefik.http.routers.chatterer.entrypoints=telegram"
       - "traefik.http.routers.chatterer.tls.certresolver=letsencrypt"
       - "traefik.http.services.chatterer.loadbalancer.server.port=8443"
+
+networks:
+  traefik:
+    external: true
