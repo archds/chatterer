@@ -4,7 +4,7 @@ services:
     env_file:
       - .env
     environment:
-      - BOT__ROUTE=/telegram/chatterer-bot
+      - BOT__ROUTE=/telegram/chatterer
       - BOT__PERSISTENCE_PATH=/data
     volumes:
       - ./ssl:/ssl
