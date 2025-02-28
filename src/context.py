@@ -46,6 +46,15 @@ class LLMContext:
         self._deque.append(context)
         self._updated_at = datetime.now()
 
+    def save_to_chat_data(self, context: ContextTypes.DEFAULT_TYPE) -> None:
+        chat_data = {
+            "llm_context": self,
+            "llm_context_updated_at": self._updated_at,
+        }
+        
+        if context.chat_data is not None:
+            context.chat_data.update(chat_data)
+
     @property
     def content(self) -> list:
         return [self._system_prompt, *self._deque]

@@ -34,7 +34,7 @@ class OpenaiSDKSettings(BaseModel):
     base_url: str
     token: str
     model: str
-    context_length: int = Field(default=5)
+    context_length: int = Field(default=7)
     context_timeout: int = Field(default=600)
 
 

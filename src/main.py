@@ -3,7 +3,7 @@ import io
 import logging
 import re
 from openai.types.chat.chat_completion import ChatCompletion
-from telegram import Update
+from telegram import Message, PhotoSize, Sticker, Update
 from telegram.constants import ChatType
 from telegram.ext import ContextTypes, MessageHandler, filters, CommandHandler
 
@@ -73,6 +73,52 @@ def prepare_prompt(update: Update) -> str:
     return prompt
 
 
+async def prepare_photo(photo: tuple[PhotoSize, ...] | Sticker) -> str:
+    buff = io.BytesIO()
+
+    if isinstance(photo, Sticker):
+        thumbnail = photo.thumbnail
+        file = await thumbnail.get_file() if thumbnail else await photo.get_file()
+    else:
+        file = await photo[-1].get_file()
+
+    await file.download_to_memory(buff)
+    return "data:image/jpeg;base64," + base64.b64encode(buff.getvalue()).decode()
+
+
+async def resolve_message_to_content(message: Message) -> list[dict]:
+    content = []
+
+    if message.text:
+        content.append(
+            {
+                "type": "text",
+                "text": prepare_text(message.text),
+            }
+        )
+
+    if message.photo:
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": await prepare_photo(message.photo),
+                    "detail": "auto",
+                },
+            }
+        )
+
+    if message.sticker and message.sticker.emoji:
+        content.append(
+            {
+                "type": "text",
+                "text": message.sticker.emoji,
+            }
+        )
+
+    return content
+
+
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_chat:
         return
@@ -87,39 +133,29 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @auth_required(App.auth_database)
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    assert context.user_data is not None
     assert update.message is not None
     assert update.effective_user is not None
     assert update.effective_chat is not None
-
-    if (
-        update.message.reply_to_message
-        and update.message.reply_to_message.from_user
-        and update.message.reply_to_message.from_user.id != context.bot.id
-    ):
-        return
 
     llm_context = LLMContext.from_tg_context(context) or LLMContext(update)
 
     content = []
 
-    if update.message.text:
-        content.append({"type": "text", "text": prepare_text(update.message.text)})
+    if update.message.reply_to_message:
+        reply = update.message.reply_to_message
 
-    if update.message.photo:
-        buff = io.BytesIO()
-        photo = await update.message.photo[-1].get_file()
-        await photo.download_to_memory(buff)
-        base64_photo = base64.b64encode(buff.getvalue()).decode()
-        content.append(
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": "data:image/jpeg;base64," + base64_photo,
-                    "detail": "auto",
-                },
-            }
+        is_private_chat = update.effective_chat.type == ChatType.PRIVATE
+        replied_directly = reply.from_user and reply.from_user.id == context.bot.id
+        reply_contains_prefix = update.message.text and PREFIX_REGEX.search(
+            update.message.text
         )
+
+        if not replied_directly and not reply_contains_prefix and not is_private_chat:
+            return
+
+        content.extend(await resolve_message_to_content(reply))
+
+    content.extend(await resolve_message_to_content(update.message))
 
     if not content:
         return
@@ -146,6 +182,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(
                 "Лимит запросов в минуту исчерпан, попробуйте позднее."
             )
+            return
 
     response = prepare_response(response)
 
@@ -163,7 +200,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text(escape_markdown(response))
 
-    context.user_data["llm_context"] = llm_context
+    llm_context.save_to_chat_data(context)
 
 
 @auth_required(App.auth_database)
@@ -188,6 +225,14 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 
+ALLOWED_CONTENTS = filters.TEXT | filters.PHOTO | filters.Sticker.ALL
+
+IS_GROUP_CHAT_MESSAGE = (
+    filters.Regex(PREFIX_REGEX) & filters.ChatType.GROUPS & ALLOWED_CONTENTS
+)
+IS_GROUP_CHAT_REPLY = filters.REPLY & filters.ChatType.GROUPS & ALLOWED_CONTENTS
+IS_PRIVATE_CHAT_MESSAGE = filters.ChatType.PRIVATE & ALLOWED_CONTENTS
+
 HANDLERS = [
     CommandHandler(
         "start",
@@ -196,9 +241,7 @@ HANDLERS = [
     ),
     CommandHandler("clear", clear_user_data),
     MessageHandler(
-        (filters.Regex(PREFIX_REGEX) & filters.ChatType.GROUPS)
-        | ((filters.TEXT | filters.PHOTO) & filters.ChatType.PRIVATE)
-        | (filters.REPLY & filters.TEXT),
+        IS_GROUP_CHAT_MESSAGE | IS_GROUP_CHAT_REPLY | IS_PRIVATE_CHAT_MESSAGE,
         echo,
     ),
 ]
