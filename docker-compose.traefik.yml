@@ -1,0 +1,17 @@
+services:
+  chatterer:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - BOT__ROUTE=/telegram/chatterer-bot
+      - BOT__PERSISTENCE_PATH=/data
+    volumes:
+      - ./ssl:/ssl
+      - ./data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chatterer.rule=PathPrefix(`/telegram/chatterer-bot`)"
+      - "traefik.http.routers.chatterer.entrypoints=telegram"
+      - "traefik.http.routers.chatterer.tls.certresolver=myresolver"
+      - "traefik.http.services.chatterer.loadbalancer.server.port=8443"
