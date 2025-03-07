@@ -137,7 +137,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_user is not None
     assert update.effective_chat is not None
 
-    llm_context = LLMContext.from_tg_context(context) or LLMContext(update)
+    llm_context = LLMContext.from_tg_context(context) or LLMContext()
 
     content = []
 
@@ -172,9 +172,13 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         action="typing",
     )
 
+    from devtools import debug
+
+    debug(llm_context.get_content(update))
+
     response = await App.openai_client.chat.completions.create(
         model=App.settings.openai.model,
-        messages=llm_context.content,
+        messages=llm_context.get_content(update),
     )
 
     if err := getattr(response, "error", None):

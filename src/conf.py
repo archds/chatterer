@@ -26,6 +26,7 @@ class BotSettings(BaseModel):
     mode: Literal["webhook", "polling"]
     group_chat_react_regex_prefix: str
     password: str
+    name: str | None = None
 
     def get_webhook_url(self):
         return f"https://{self.domain}:{self.port}{self.route}"

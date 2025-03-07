@@ -17,25 +17,57 @@ from openai.types.chat.chat_completion_assistant_message_param import (
 
 
 class LLMContext:
-    def __init__(self, update: Update) -> None:
+    def __init__(self) -> None:
         self._deque = deque([], maxlen=App.settings.openai.context_length)
         self._updated_at = datetime.now()
-        self._system_prompt = ChatCompletionSystemMessageParam(
-            role="system",
-            content=self.prepare_prompt(update),
-        )
+        self.dialogue_members = []
 
     def prepare_prompt(self, update: Update) -> str:
         prompt = App.settings.default_model_prompt
 
-        if username := update.effective_user and update.effective_user.username:
-            prompt += f"\nYou are messaging with user nicknamed as: {username}"
+        if App.settings.bot.name:
+            prompt += f"\nYour name is: {App.settings.bot.name}"
 
-        if name := update.effective_user and update.effective_user.first_name:
-            prompt += f"\nYou are messaging with user named as: {name}"
+        username = update.effective_user and update.effective_user.username
+        name = update.effective_user and update.effective_user.first_name
 
-        if update.effective_chat and update.effective_chat.type == ChatType.GROUP:
+        if update.effective_chat and update.effective_chat.type == ChatType.PRIVATE:
+            prompt += "You are messaging with user in private telegram chat now."
+
+            if username:
+                prompt += f"\nUser telegram nickname is: {username}."
+
+            if name:
+                prompt += f"\nUser name is: {name}."
+
+        if update.effective_chat and update.effective_chat.type in (
+            ChatType.GROUP,
+            ChatType.SUPERGROUP,
+        ):
+            prompt += "You are member of group chat now."
+
+            if username:
+                prompt += f"\nThe last message was from user nicknamed as: {username}."
+
+            if name:
+                prompt += f"\nThe last message was from user named as: {name}."
+
             prompt += f"\nYou are member of group chat with name: {update.effective_chat.title}"
+
+            member = (username, name)
+
+            if member not in self.dialogue_members:
+                self.dialogue_members.append(member)
+
+            members_fmt = [
+                (f"username: {username}" if username else "")
+                + (f"name: {name}" if name else "")
+                for username, name in self.dialogue_members
+                if username or name
+            ]
+
+            if members_fmt:
+                prompt += f"\nMembers of this dialogue are: {'; '.join(members_fmt)}. Here only those who has username or name."
 
         return prompt
 
@@ -51,13 +83,14 @@ class LLMContext:
             "llm_context": self,
             "llm_context_updated_at": self._updated_at,
         }
-        
+
         if context.chat_data is not None:
             context.chat_data.update(chat_data)
 
-    @property
-    def content(self) -> list:
-        return [self._system_prompt, *self._deque]
+    def get_content(self, update: Update) -> list:
+        system_prompt = self.prepare_prompt(update)
+        sys_msg = ChatCompletionSystemMessageParam(role="system", content=system_prompt)
+        return [sys_msg, *self._deque]
 
     @classmethod
     def from_tg_context(cls, context: ContextTypes.DEFAULT_TYPE) -> Self | None:
