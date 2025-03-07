@@ -26,7 +26,7 @@ class LLMContext:
         prompt = App.settings.default_model_prompt
 
         if App.settings.bot.name:
-            prompt += f"\nYour name is: {App.settings.bot.name}"
+            prompt += f"\nYour name is: {App.settings.bot.name}\n"
 
         username = update.effective_user and update.effective_user.username
         name = update.effective_user and update.effective_user.first_name
