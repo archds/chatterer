@@ -172,10 +172,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         action="typing",
     )
 
-    from devtools import debug
-
-    debug(llm_context.get_content(update))
-
     response = await App.openai_client.chat.completions.create(
         model=App.settings.openai.model,
         messages=llm_context.get_content(update),
