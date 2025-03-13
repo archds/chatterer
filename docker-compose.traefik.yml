@@ -1,6 +1,7 @@
 services:
   chatterer:
     build: .
+    restart: always
     networks:
       - traefik
     env_file:
